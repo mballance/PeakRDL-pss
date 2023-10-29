@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "peakrdl-pss"
+dynamic = ["version"]
+requires-python = ">=3.6"
+dependencies = [
+    "systemrdl-compiler >= 1.21.0, < 2",
+    "jinja2",
+]
+
+authors = [
+    {name="Matthew Ballance"},
+]
+description = "Generate PSS register definitions from a SystemRDL register model"
+readme = "README.md"
+license = {file = "LICENSE"}
+keywords = [
+    "SystmRDL", "PeakRDL", "CSR", "compiler", "tool", "registers", "generator",
+    "PSS", "Portable Stimulus"
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.6",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
+]
+
+[project.urls]
+Source = "https://github.com/SystemRDL/PeakRDL-pss"
+Tracker = "https://github.com/SystemRDL/PeakRDL-pss/issues"
+Changelog = "https://github.com/SystemRDL/PeakRDL-pss/releases"
+Documentation = "https://peakrdl-pss.readthedocs.io/"
+
+[tool.setuptools.dynamic]
+version = {attr = "peakrdl_pss.__about__.__version__"}
+
+[project.entry-points."peakrdl.exporters"]
+pss = "peakrdl_pss.__peakrdl__:Exporter"
