@@ -2,7 +2,6 @@ from enum import Enum, auto
 from typing import Any, Optional, Union
 from systemrdl.walker import RDLListener, RDLWalker, WalkerAction
 from systemrdl.node import FieldNode, RegNode, RootNode, AddrmapNode, MemNode, RegfileNode
-from .output import Output
 
 class Phase(Enum):
     Decl = auto()
@@ -23,7 +22,6 @@ class PssExporter(RDLListener):
         top_nodes = [top_node]
 
         self._fp = open(path, "w", encoding='utf-8')
-        self._out = Output(self._fp)
         self._ind = ""
         self._depth = 0
         self._phase = []
@@ -93,12 +91,14 @@ class PssExporter(RDLListener):
             self.println("return 0;")
             self.dec_ind()
             self.println("}")
+            self.dec_ind()
+            self.println("}")
 
+            self.println()
+            self.println("pure function bit[64] get_offset_of_instance_array(string name, int index) {")
+            self.inc_ind()
             if have_array:
                 clause = 0
-                self.println()
-                self.println("pure function bit[64] get_offset_of_instance(string name, int index) {")
-                self.inc_ind()
                 for name,(offset,dim,size) in self._name_offset_s[-1].items():
                     if dim:
                         if clause:
@@ -114,9 +114,10 @@ class PssExporter(RDLListener):
                 self.println("return 0;")
                 self.dec_ind()
                 self.println("}")
-
-        self.dec_ind()
-        self.println("}")
+            else:
+                self.println("return 0;")
+            self.dec_ind()
+            self.println("}")
 
 
         self.dec_ind()
@@ -153,11 +154,6 @@ class PssExporter(RDLListener):
                 dim_s = "[%d]" % node.size
             array_sz = node.array_dimensions[0] if node.is_array else 0
             array_str = node.array_stride if node.is_array else 0
-            print("%s: offset=%d size=%d width=%d" % (
-                node.inst_name, 
-                node.raw_address_offset,
-                array_sz,
-                node.size))
             self._name_offset_s[-1][node.inst_name] = (node.raw_address_offset,array_sz,array_str)
             self.println("%s %s%s;" % (
                 node.type_name, 
@@ -188,12 +184,14 @@ class PssExporter(RDLListener):
                 self.println("return 0;")
                 self.dec_ind()
                 self.println("}")
+                self.dec_ind()
+                self.println("}")
 
+                self.println()
+                self.println("pure function bit[64] get_offset_of_instance_array(string name, int index) {")
+                self.inc_ind()
                 if have_array:
                     clause = 0
-                    self.println()
-                    self.println("pure function bit[64] get_offset_of_instance(string name, int index) {")
-                    self.inc_ind()
                     for name,(offset,dim,size) in self._name_offset_s[-1].items():
                         if dim:
                             if clause:
@@ -209,13 +207,14 @@ class PssExporter(RDLListener):
                     self.println("return 0;")
                     self.dec_ind()
                     self.println("}")
-                    self.dec_ind()
-                    self.println("}")
-                self._name_offset_s.pop()
+                else:
+                    self.println("return 0;")
                 self.dec_ind()
                 self.println("}")
-        self.dec_ind()
-        self.println("}")
+
+                self._name_offset_s.pop()
+            self.dec_ind()
+            self.println("} // end-regblock")
     
         return WalkerAction.Continue
 
@@ -244,7 +243,6 @@ class PssExporter(RDLListener):
                 self.push_phase(Phase.Skip, node)
                 return WalkerAction.SkipDescendants
         elif self.phase() == Phase.Inst:
-            print("%s: offset=%d" % (node.inst_name, node.raw_address_offset))
             array_sz = node.array_dimensions[0] if node.is_array else 0
             array_str = node.array_stride if node.is_array else 0
             self._name_offset_s[-1][node.inst_name] = (node.raw_address_offset,array_sz,array_str)
@@ -278,19 +276,25 @@ class PssExporter(RDLListener):
         return WalkerAction.Continue
 
     def println(self, s=""):
-        self._out.println(s)
+        if s != "":
+            self._fp.write(self.ind())
+            self._fp.write(s)
+        self._fp.write("\n")
 
     def write(self, s):
-        self._out.write(s)
+        self._fp.write(s)
 
     def inc_ind(self):
-        self._out.inc_ind()
+        self._ind += "    "
     
     def ind(self):
-        return self._out.ind()
+        return self._ind
     
     def dec_ind(self):
-        self._out.dec_ind()
+        if len(self._ind) > 4:
+            self._ind = self._ind[4:]
+        else:
+            self._ind = ""
 
     def push_phase(self, phase : Phase, node):
         self._phase.append((phase, node))
@@ -307,14 +311,3 @@ class PssExporter(RDLListener):
             ret = self._phase.pop()[0]
         return ret
 
-    def get_node_prefix(self, node: 'AddressableNode') -> str:
-        prefix = node.get_rel_path(
-            self.root_node.parent,
-            hier_separator="__",
-            array_suffix="x",
-            empty_array_suffix="x"
-        )
-        return prefix
-
-#    def get_struct_name(self, node: 'AddressableNode') -> str:
-#        return utils.get_struct_name(self.ds, self.root_node, node)
