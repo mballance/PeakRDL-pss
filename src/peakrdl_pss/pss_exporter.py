@@ -36,6 +36,7 @@ class PssExporter(RDLListener):
             self.println("package %s {" % package)
             self.inc_ind()
 
+        self.println("import std_pkg::*;")
         self.println("import addr_reg_pkg::*;")
         self.println()
 
